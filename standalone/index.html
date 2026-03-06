@@ -23,6 +23,138 @@
 <body>
     <div id="root"></div>
 
-    <script type="text/babel" src="app.js"></script>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        // Framer Motion global is usually Motion
+        const motion = window.Motion || { div: (props) => <div {...props} /> }; // Fallback if motion fails to load
+
+        const App = () => {
+          const MOVIES = window.MOVIES || [];
+          const [isDiscordVerified, setIsDiscordVerified] = useState(() => {
+            return localStorage.getItem('discord_verified') === 'true';
+          });
+          const [activeTab, setActiveTab] = useState('Home');
+          const [selectedMovie, setSelectedMovie] = useState(null);
+          const [isVerifying, setIsVerifying] = useState(false);
+
+          const handleVerifyDiscord = () => {
+            setIsVerifying(true);
+            window.open("https://discord.gg/atWBtmQxMP", '_blank');
+            setTimeout(() => {
+              localStorage.setItem('discord_verified', 'true');
+              setIsDiscordVerified(true);
+              setIsVerifying(false);
+            }, 3000);
+          };
+
+          const handleLogout = () => {
+            localStorage.removeItem('discord_verified');
+            setIsDiscordVerified(false);
+            setActiveTab('Home');
+          };
+
+          const handlePlay = (movie) => {
+            if (movie.videoUrl) {
+              window.open(movie.videoUrl, '_blank');
+            } else {
+              alert("This video is not available yet.");
+            }
+          };
+
+          useEffect(() => {
+            if (window.lucide) {
+              window.lucide.createIcons();
+            }
+          }, [isDiscordVerified]);
+
+          if (!isDiscordVerified) {
+            return (
+              <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden bg-[#0a0a0c] text-white">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-violet-600/20 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-fuchsia-600/20 blur-[120px] rounded-full" />
+                
+                <div className="w-full max-w-md glass-panel p-8 md:p-10 rounded-3xl text-center space-y-6 relative z-10">
+                  <div className="w-20 h-20 bg-violet-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-violet-600/20">
+                    <i data-lucide="message-square" className="w-12 h-12 text-white"></i>
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-black tracking-tight">Discord Required</h2>
+                    <p className="text-white/60 text-sm">
+                      To access VioletStream, you must be part of our Discord community.
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={handleVerifyDiscord}
+                    disabled={isVerifying}
+                    className="w-full bg-white text-black font-bold py-4 rounded-2xl hover:bg-violet-500 hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isVerifying ? 'Verifying...' : 'Join & Verify'}
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="min-h-screen bg-[#0a0a0c] text-white pb-24 md:pb-0">
+              {/* Simple Navbar */}
+              <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0c]/80 backdrop-blur-2xl border-b border-white/5 px-6 py-4">
+                <div className="max-w-7xl mx-auto flex items-center justify-between">
+                  <h1 className="text-2xl font-black tracking-tighter violet-gradient-text cursor-pointer" onClick={() => setActiveTab('Home')}>
+                    VIOLET
+                  </h1>
+                  <div className="flex items-center gap-6">
+                    <button onClick={handleLogout} className="text-xs text-white/40 hover:text-white underline">Reset Access</button>
+                  </div>
+                </div>
+              </nav>
+
+              {/* Hero Section */}
+              <main className="pt-20">
+                <div className="relative h-[70vh] w-full overflow-hidden">
+                  <img src={MOVIES[0].backdrop} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/40 to-transparent" />
+                  <div className="absolute bottom-0 left-0 p-8 md:p-16 space-y-4 max-w-2xl">
+                    <h1 className="text-4xl md:text-6xl font-black tracking-tighter">{MOVIES[0].title}</h1>
+                    <p className="text-white/70 text-lg line-clamp-3">{MOVIES[0].description}</p>
+                    <div className="flex gap-4">
+                      <button onClick={() => handlePlay(MOVIES[0])} className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-violet-500 hover:text-white transition-all">Play Now</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Movie List */}
+                <div className="px-6 py-12 space-y-8">
+                  <h2 className="text-2xl font-bold">Trending Now</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {MOVIES.map(movie => (
+                      <div key={movie.id} className="glass-panel rounded-2xl overflow-hidden group cursor-pointer" onClick={() => handlePlay(movie)}>
+                        <div className="relative aspect-video">
+                          <img src={movie.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <i data-lucide="play" className="w-12 h-12 text-white"></i>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-bold text-lg">{movie.title}</h3>
+                          <p className="text-white/40 text-sm">{movie.year} • {movie.duration}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </main>
+
+              <footer className="py-12 px-6 border-t border-white/5 text-center text-white/20 text-sm">
+                &copy; 2024 VioletStream. All rights reserved.
+              </footer>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
